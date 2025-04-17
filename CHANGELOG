@@ -17,3 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   open source project CHANGELOG.
 - README in English and Spanish.
 - Basic structure of the project.
+
+## [0.1.1] 2025-04-17
+
+### Added
+
+- CI to ensure the project is buildable.
+
+### Fixed
+
+- Stack overflow for long signatures.

@@ -21,18 +21,24 @@
 	(xs)->items[(xs)->count++] = (x);\
 } while (0);
 
-// TODO(srvariable): Change this to avoid stack overflow
-typedef struct String
+typedef struct StringBuffer
 {
 	char	chars[1024];
-}				String;
+}				StringBuffer;
 
 typedef struct Array
 {
-	String	*items;
+	StringBuffer	*items;
 	size_t	count;
 	size_t	capacity;
 }				Array;
+
+typedef struct Signature
+{
+	char	**items;
+	size_t	count;
+	size_t	capacity;
+}				Signature;
 
 typedef enum inform_level
 {
@@ -76,9 +82,9 @@ void	inform(InformLevel level, char *message, ...)
 	va_end(ap);
 }
 
-String	create_new_path(char *path, char *name)
+StringBuffer	create_new_path(char *path, char *name)
 {
-	String new_path = {0};
+	StringBuffer new_path = {0};
 
 	size_t path_len = strlen(path);
 	memcpy(new_path.chars, path, path_len);
@@ -125,7 +131,7 @@ void	find_files(char *path, Array *dir_names, int depth)
 	{
 		if (*dirent->d_name != '.')
 		{
-			String new_path = create_new_path(path, dirent->d_name);
+			StringBuffer new_path = create_new_path(path, dirent->d_name);
 			if (dirent->d_type == DT_REG && access(new_path.chars, X_OK) < 0)
 			{
 				da_append(dir_names, new_path);
@@ -214,7 +220,7 @@ bool	is_keyword(char *line)
 // (Vector2){.x = 5, .y = 2}
 //
 // So this will be a little more difficult than I expected, but not that much I hope
-void	get_signatures(Array *signatures, char *filename)
+void	get_signatures(Signature *signatures, char *filename)
 {
 	char *content = read_entire_file(filename);
 	if (!content)
@@ -278,9 +284,7 @@ void	get_signatures(Array *signatures, char *filename)
 			// And has found a parenthesis
 			if (parenthesis_found && end > start)
 			{
-				String signature = {0};
-				memcpy(signature.chars, &content[start], end - start);
-				da_append(signatures, signature);
+				da_append(signatures, strndup(&content[start], end - start));
 			}
 		}
 
@@ -302,9 +306,7 @@ void	get_signatures(Array *signatures, char *filename)
 			// And has found a parenthesis
 			if (parenthesis_found && end > start)
 			{
-				String signature = {0};
-				memcpy(signature.chars, &content[start], end - start);
-				da_append(signatures, signature);
+				da_append(signatures, strndup(&content[start], end - start));
 			}
 		}
 		start = i + 1;
@@ -332,7 +334,7 @@ int	main(int argc, char **argv)
 		find_files(argv[i], &dir_names, 0);
 	}
 
-	Array signatures = {0};
+	Signature signatures = {0};
 	size_t j = 0;
 	for (size_t i = 0; i < dir_names.count; ++i)
 	{
@@ -345,11 +347,15 @@ int	main(int argc, char **argv)
 			printf("%s\n", filename);
 			for (; j < signatures.count; ++j)
 			{
-				printf(" | - %s\n", signatures.items[j].chars);
+				printf(" | - %s\n", signatures.items[j]);
 			}
 		}
 	}
 	free(dir_names.items);
+	for (size_t i = 0; i < signatures.count; ++i)
+	{
+		free(signatures.items[i]);
+	}
 	free(signatures.items);
 
 	return (0);
